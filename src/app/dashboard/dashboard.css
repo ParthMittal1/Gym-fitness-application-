@@ -1,0 +1,285 @@
+/* =============================================================================
+   CUSTOMER WORKSPACE DASHBOARD — Layout & Shared Styles
+   ============================================================================= */
+
+.dashboard-layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  position: relative;
+}
+
+/* ─── Sidebar Navigation (Desktop) ─────────────────────────────────────────── */
+.dashboard-sidebar {
+  width: 270px;
+  flex-shrink: 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(12, 13, 21, 0.95);
+  border-right: 1px solid var(--border-subtle);
+  padding: var(--space-6);
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dashboard-sidebar-header {
+  margin-bottom: var(--space-6);
+}
+
+.dashboard-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+.dashboard-sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-grow: 1;
+}
+
+.dashboard-menu-category {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  padding: var(--space-3) var(--space-3) var(--space-1);
+}
+
+.dashboard-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.dashboard-nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-subtle);
+}
+
+.dashboard-nav-item.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(16, 185, 129, 0.12));
+  border-color: rgba(124, 58, 237, 0.4);
+  font-weight: 600;
+  box-shadow: var(--glow-violet-sm);
+}
+
+.dashboard-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard-sidebar-user {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dashboard-user-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+}
+
+.dashboard-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(16, 185, 129, 0.25));
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ─── Main Viewport ─────────────────────────────────────────────────────────── */
+.dashboard-main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 70% 35% at 90% 5%, rgba(124, 58, 237, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 30% at 10% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+
+.dashboard-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-8);
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(10, 11, 16, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.dashboard-topbar-mobile-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: var(--space-2);
+}
+
+.dashboard-content {
+  padding: var(--space-8) var(--space-8) var(--space-16);
+  flex: 1;
+}
+
+/* ─── Responsive Drawer for Small Devices ──────────────────────────────────── */
+@media (max-width: 1024px) {
+  .dashboard-sidebar {
+    display: none;
+  }
+  .dashboard-topbar-mobile-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dashboard-content {
+    padding: var(--space-6) var(--space-4) var(--space-12);
+  }
+}
+
+.dashboard-mobile-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(8, 9, 14, 0.98);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  backdrop-filter: blur(24px);
+  overflow-y: auto;
+}
+
+/* ─── Dashboard Overview Widgets ────────────────────────────────────────────── */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.16) 0%, rgba(16, 185, 129, 0.1) 100%), #11121d;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  margin-bottom: var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+  .welcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-6);
+    padding: var(--space-6);
+  }
+}
+
+.quick-actions-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+@media (max-width: 1024px) {
+  .quick-actions-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-actions-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quick-action-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  text-decoration: none;
+  transition: var(--transition-base);
+}
+
+.quick-action-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-violet);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.summary-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+@media (max-width: 1024px) {
+  .summary-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.workout-timeline-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+}
+
+.workout-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 150ms;
+}
+
+.workout-item-row:last-child {
+  border-bottom: none;
+}

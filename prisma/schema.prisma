@@ -1,0 +1,309 @@
+// =============================================================================
+// GYM FITNESS — Prisma Schema
+// Provider  : SQLite (dev) → swap datasource url for PostgreSQL in production
+// Generator : prisma-client-js
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+// SQLite does not support native enums; we model them as String with @default
+// and validate at the application layer (Zod).  Keeping the names here as
+// comments so the intent is clear for a future PostgreSQL migration.
+
+// Role       : MEMBER | TRAINER | ADMIN | SUPER_ADMIN
+// Tier       : SILVER | GOLD | PLATINUM
+// MemberStatus: ACTIVE | EXPIRED | PENDING | CANCELLED
+// PayStatus  : PENDING | SUCCESS | FAILED | REFUNDED
+// GoalStatus : IN_PROGRESS | ACHIEVED | ABANDONED
+// Difficulty : BEGINNER | INTERMEDIATE | ADVANCED
+
+// =============================================================================
+// AUTH MODELS  (NextAuth.js Prisma Adapter — exact field names required)
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?   // hashed with bcryptjs; null for OAuth users
+  phone         String?
+  city          String?
+  role          String    @default("MEMBER")  // MEMBER | TRAINER | ADMIN | SUPER_ADMIN
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Business relations
+  memberships   Membership[]
+  payments      Payment[]
+  goals         FitnessGoal[]
+  workoutLogs   WorkoutLog[]
+  progressLogs  ProgressEntry[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// =============================================================================
+// MEMBERSHIP & PLANS
+// =============================================================================
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  price       Float                          // INR, stored as paise-safe float
+  duration    Int                            // months
+  tier        String                         // SILVER | GOLD | PLATINUM
+  description String?
+  features    String                         // JSON array: '["HD videos","PT session"]'
+  popular     Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships Membership[]
+
+  @@map("plans")
+}
+
+model Membership {
+  id         String   @id @default(cuid())
+  userId     String
+  planId     String
+  status     String   @default("PENDING")   // ACTIVE | EXPIRED | PENDING | CANCELLED
+  cardNumber String   @unique               // physical card / QR code value
+  startDate  DateTime
+  endDate    DateTime
+  autoRenew  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@map("memberships")
+}
+
+// =============================================================================
+// PAYMENTS  (Razorpay integration)
+// =============================================================================
+
+model Payment {
+  id                 String   @id @default(cuid())
+  userId             String
+  membershipId       String?                        // null for one-off purchases
+  amount             Float                          // in INR (not paise)
+  currency           String   @default("INR")
+  status             String   @default("PENDING")   // PENDING | SUCCESS | FAILED | REFUNDED
+  razorpayOrderId    String?  @unique
+  razorpayPaymentId  String?  @unique
+  razorpaySignature  String?
+  description        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membership Membership? @relation(fields: [membershipId], references: [id])
+
+  @@map("payments")
+}
+
+// =============================================================================
+// GYM LOCATIONS
+// =============================================================================
+
+model GymLocation {
+  id        String  @id @default(cuid())
+  name      String
+  city      String
+  state     String
+  address   String
+  phone     String?
+  email     String?
+  lat       Float?                   // latitude  for map pin
+  lng       Float?                   // longitude for map pin
+  amenities String?                  // JSON array: '["Pool","Sauna","Parking"]'
+  timings   String?                  // e.g. "Mon-Sat 5am-11pm, Sun 7am-9pm"
+  rating    Float?  @default(0)
+  active    Boolean @default(true)
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("gym_locations")
+}
+
+// =============================================================================
+// WORKOUT CONTENT
+// =============================================================================
+
+model WorkoutPlan {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String                        // e.g. "Strength", "HIIT", "Yoga"
+  difficulty  String                        // BEGINNER | INTERMEDIATE | ADVANCED
+  duration    Int                           // total estimated minutes
+  calories    Int?                          // estimated kcal burned
+  description String?
+  imageUrl    String?
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  exercises   WorkoutExercise[]
+
+  @@map("workout_plans")
+}
+
+model Exercise {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  muscleGroup  String                        // e.g. "Chest", "Back", "Legs"
+  equipment    String?                       // e.g. "Barbell", "Dumbbell", "None"
+  difficulty   String                        // BEGINNER | INTERMEDIATE | ADVANCED
+  instructions String?                       // step-by-step text
+  tips         String?                       // JSON array: '["Keep back flat","..."]'
+  videoUrl     String?
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workoutPlans WorkoutExercise[]
+  workoutLogs  WorkoutLog[]
+
+  @@map("exercises")
+}
+
+/// Join table — many WorkoutPlans ↔ many Exercises with extra order/set data
+model WorkoutExercise {
+  id            String @id @default(cuid())
+  workoutPlanId String
+  exerciseId    String
+  sets          Int    @default(3)
+  reps          String @default("12")        // "12", "10-12", "to failure"
+  restSeconds   Int    @default(60)
+  order         Int    @default(0)           // display order within the plan
+
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise    Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([workoutPlanId, exerciseId, order])
+  @@map("workout_exercises")
+}
+
+// =============================================================================
+// USER FITNESS TRACKING
+// =============================================================================
+
+model FitnessGoal {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String                           // e.g. "WEIGHT_LOSS", "STRENGTH", "ENDURANCE"
+  title     String
+  target    Float
+  current   Float     @default(0)
+  unit      String    @default("kg")         // kg | reps | mins | cm | %
+  deadline  DateTime?
+  status    String    @default("IN_PROGRESS") // IN_PROGRESS | ACHIEVED | ABANDONED
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fitness_goals")
+}
+
+model WorkoutLog {
+  id         String   @id @default(cuid())
+  userId     String
+  exerciseId String
+  sets       Int
+  reps       Int
+  weight     Float?                          // kg; null for bodyweight exercises
+  duration   Int?                            // seconds
+  notes      String?
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@map("workout_logs")
+}
+
+model ProgressEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  weight    Float?                           // kg
+  bodyFat   Float?                           // %
+  chest     Float?                           // cm
+  waist     Float?                           // cm
+  hips      Float?                           // cm
+  biceps    Float?                           // cm
+  thighs    Float?                           // cm
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("progress_entries")
+}
